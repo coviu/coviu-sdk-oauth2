@@ -8,70 +8,6 @@ var request = require('coviu-sdk-http').request;
 var cuid = require('cuid');
 var Events = require('events');
 
-function buildAuth(token) {
-  return {
-    'bearer': token
-  };
-}
-
-exports.userContext = function(oauth2, grant) {
-  var ctx;
-  var refreshing;
-  var auth = function() {
-    return new Promise(function(resolve, reject) {
-      if (ctx.grant.next_refresh > Date.now()) {
-          return resolve(buildAuth(ctx.grant.access_token));
-      } else {
-        if (typeof refreshing === 'undefined') {
-          refreshing = oauth2.refreshAccessToken(ctx.grant.refresh_token).then(function(g) {
-            ctx.grant = g;
-            refreshing = undefined;
-            ctx.events.emit("refresh");
-            return buildAuth(g.access_token);
-          });
-        }
-        refreshing.then(resolve).catch(reject);
-      }
-    });
-  };
-  ctx = {
-    auth: auth,
-    userId: grant.userId,
-    grant: grant,
-    events: new Events.EventEmitter()
-  };
-
-  return ctx;
-};
-
-exports.passwordFlow = function(tokenRequest, opts) {
-  return tokenRequest
-  .form({grant_type: 'password', username: opts.user,password: opts.pass})
-  .run()
-};
-
-exports.refreshToken = function(tokenRequest, opts) {
-  return tokenRequest
-  .form({grant_type: 'refresh_token',refresh_token: opts.refreshToken})
-  .run()
-};
-
-exports.clientCredentialsFlow = function(tokenRequest) {
-  return tokenRequest
-  .form({grant_type: 'client_credentials'})
-  .run()
-};
-
-exports.decodeAccessToken = function(t) {
-  return new Promise(function(accept, reject){
-    try {
-      accept(jwt.decode(t));
-    } catch (e) {
-      reject(e);
-    }
-  });
-};
-
 /**
  * OAuth2Client wraps up an api invocation in the required OAuth2 Authorization behaviour.
  * apiKey: The issued api client key
@@ -87,35 +23,35 @@ exports.OAuth2Client = function(apiKey, keySecret, service) {
     */
     getAccessToken: function(email, password) {
       var opts = {user: email, pass: password};
-      return exports.passwordFlow(tokenRequest, opts);
+      return passwordFlow(tokenRequest, opts);
     },
 
     /*
       Recover an access token and refersh token by following the OAuth2 client_credentials grant flow.
     */
     getClientAccessToken: function(){
-      return exports.clientCredentialsFlow(tokenRequest);
+      return clientCredentialsFlow(tokenRequest);
     },
 
     /*
       Refresh an access token.
     */
-    refreshAccessToken: function(refreshToken) {
-      var opts = {refreshToken: refreshToken};
-      return exports.refreshToken(tokenRequest, opts);
+    refreshAccessToken: function(token) {
+      var opts = {refreshToken: token};
+      return refreshToken(tokenRequest, opts);
     },
     /*
      Decode the provided access token.
     */
     decodeAccessToken: function(at){
-      return exports.decodeAccessToken(at);
+      return decodeAccessToken(at);
     },
 
     /*
       Attach automatic token refresh behaviour when recovering auth headers using the supplied grant.
     */
     userContext: function(grant) {
-      return exports.userContext(oauth2, grant);
+      return userContext(oauth2, grant);
     },
 
     /*
@@ -147,4 +83,68 @@ exports.OAuth2Client = function(apiKey, keySecret, service) {
   .post()
   .map(oauth2.prepairGrant);
   return oauth2;
+};
+
+function buildAuth(token) {
+  return {
+    'bearer': token
+  };
+}
+
+function userContext(oauth2, grant) {
+  var ctx;
+  var refreshing;
+  var auth = function() {
+    return new Promise(function(resolve, reject) {
+      if (ctx.grant.next_refresh > Date.now()) {
+          return resolve(buildAuth(ctx.grant.access_token));
+      } else {
+        if (typeof refreshing === 'undefined') {
+          refreshing = oauth2.refreshAccessToken(ctx.grant.refresh_token).then(function(g) {
+            ctx.grant = g;
+            refreshing = undefined;
+            ctx.events.emit("refresh");
+            return buildAuth(g.access_token);
+          });
+        }
+        refreshing.then(resolve).catch(reject);
+      }
+    });
+  };
+  ctx = {
+    auth: auth,
+    userId: grant.userId,
+    grant: grant,
+    events: new Events.EventEmitter()
+  };
+
+  return ctx;
+};
+
+function passwordFlow(tokenRequest, opts) {
+  return tokenRequest
+  .form({grant_type: 'password', username: opts.user,password: opts.pass})
+  .run()
+};
+
+function refreshToken(tokenRequest, opts) {
+  return tokenRequest
+  .form({grant_type: 'refresh_token',refresh_token: opts.refreshToken})
+  .run()
+};
+
+function clientCredentialsFlow(tokenRequest) {
+  return tokenRequest
+  .form({grant_type: 'client_credentials'})
+  .run()
+};
+
+function decodeAccessToken(t) {
+  return new Promise(function(accept, reject){
+    try {
+      accept(jwt.decode(t));
+    } catch (e) {
+      reject(e);
+    }
+  });
 };
