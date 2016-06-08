@@ -4,7 +4,6 @@ var jwt = require('jsonwebtoken');
 var path = require('path');
 var Promise = require('es6-promises');
 var promisify = require('./libs/util').promisify;
-var request = require('coviu-sdk-http').request;
 var cuid = require('cuid');
 var Events = require('events');
 
