@@ -73,33 +73,59 @@ exports.decodeAccessToken = function(t) {
 };
 
 /**
- * OAuth2Client just holds the context for executing the password and refresh_token grant types
+ * OAuth2Client wraps up an api invocation in the required OAuth2 Authorization behaviour.
+ * apiKey: The issued api client key
+ * keySecret: The issued secret with the api key
+ * service: the `coviu-sdk-http` request structure for the service.
  */
 exports.OAuth2Client = function(apiKey, keySecret, service) {
   var clientGrant = null;
   var tokenRequest;
   var oauth2 = {
+    /*
+      Recover an access token and refresh token by following the OAuth2 password grant flow.
+    */
     getAccessToken: function(email, password) {
       var opts = {user: email, pass: password};
       return exports.passwordFlow(tokenRequest, opts);
     },
+
+    /*
+      Recover an access token and refersh token by following the OAuth2 client_credentials grant flow.
+    */
     getClientAccessToken: function(){
       return exports.clientCredentialsFlow(tokenRequest);
     },
+
+    /*
+      Refresh an access token.
+    */
     refreshAccessToken: function(refreshToken) {
       var opts = {refreshToken: refreshToken};
       return exports.refreshToken(tokenRequest, opts);
     },
+    /*
+     Decode the provided access token.
+    */
     decodeAccessToken: function(at){
       return exports.decodeAccessToken(at);
     },
+
+    /*
+      Attach automatic token refresh behaviour when recovering auth headers using the supplied grant.
+    */
     userContext: function(grant) {
       return exports.userContext(oauth2, grant);
     },
+
+    /*
+      Get the supplied client credentials.
+    */
     getClientCredentials: function() {
       return {user: apiKey, pass: keySecret};
     },
-    prepairGrant: function(t) {
+
+    prepairGrant: function(t){
       t.next_refresh = Date.now() + (t.expires_in / 2 )*1000;
       t.gid = cuid();
       return oauth2.decodeAccessToken(t.access_token).then(function(res){
