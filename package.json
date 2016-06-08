@@ -1,6 +1,6 @@
 {
   "name": "coviu-sdk-oauth2",
-  "version": "0.1.0",
+  "version": "0.1.1",
   "description": "oauth2 client for coviu",
   "main": "index.js",
   "scripts": {
