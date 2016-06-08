@@ -99,7 +99,7 @@ exports.OAuth2Client = function(apiKey, keySecret, service) {
     getClientCredentials: function() {
       return {user: apiKey, pass: keySecret};
     },
-    prepairGrant: function(t){
+    prepairGrant: function(t) {
       t.next_refresh = Date.now() + (t.expires_in / 2 )*1000;
       t.gid = cuid();
       return oauth2.decodeAccessToken(t.access_token).then(function(res){
