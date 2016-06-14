@@ -60,7 +60,7 @@ exports.OAuth2Client = function(apiKey, keySecret, service) {
       return {user: apiKey, pass: keySecret};
     },
 
-    prepairGrant: function(t){
+    prepareGrant: function(t){
       t.next_refresh = Date.now() + (t.expires_in / 2 )*1000;
       t.gid = cuid();
       return oauth2.decodeAccessToken(t.access_token).then(function(res){
@@ -80,7 +80,7 @@ exports.OAuth2Client = function(apiKey, keySecret, service) {
   tokenRequest = service.path('/auth/token')
   .auth({user: apiKey, pass: keySecret})
   .post()
-  .map(oauth2.prepairGrant);
+  .map(oauth2.prepareGrant);
   return oauth2;
 };
 
